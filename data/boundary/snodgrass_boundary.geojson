@@ -1,0 +1,9 @@
+{
+"type": "FeatureCollection",
+"name": "snodgrass_boundary",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"xy_coordinate_resolution": 1e-06,
+"features": [
+{ "type": "Feature", "properties": { }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -107.042656, 38.971084 ], [ -107.042656, 38.887957 ], [ -106.928745, 38.887957 ], [ -106.928745, 38.971084 ], [ -107.042656, 38.971084 ] ] ] } }
+]
+}

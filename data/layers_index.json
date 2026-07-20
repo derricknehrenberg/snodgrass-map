@@ -1,0 +1,201 @@
+{
+  "groups": [
+    {
+      "key": "usfs_gmug",
+      "title": "US Forest Service \u2014 GMUG Forest Plan 2024",
+      "layers": [
+        {
+          "name": "management_areas",
+          "title": "Management Areas",
+          "path": "data/usfs_gmug/management_areas.geojson",
+          "geometry": "Polygon",
+          "features": 56,
+          "default": true
+        },
+        {
+          "name": "ros_summer",
+          "title": "Rec. Opportunity Spectrum \u2014 Summer",
+          "path": "data/usfs_gmug/ros_summer.geojson",
+          "geometry": "Polygon",
+          "features": 18,
+          "default": false
+        },
+        {
+          "name": "ros_winter",
+          "title": "Rec. Opportunity Spectrum \u2014 Winter",
+          "path": "data/usfs_gmug/ros_winter.geojson",
+          "geometry": "Polygon",
+          "features": 18,
+          "default": false
+        },
+        {
+          "name": "scenic_integrity",
+          "title": "Scenic Integrity Objectives",
+          "path": "data/usfs_gmug/scenic_integrity.geojson",
+          "geometry": "Polygon",
+          "features": 64,
+          "default": false
+        },
+        {
+          "name": "timber_suitability",
+          "title": "Timber Suitability",
+          "path": "data/usfs_gmug/timber_suitability.geojson",
+          "geometry": "Polygon",
+          "features": 52,
+          "default": false
+        },
+        {
+          "name": "overlay_wild_scenic_rivers",
+          "title": "Wild & Scenic River Overlay",
+          "path": "data/usfs_gmug/overlay_wild_scenic_rivers.geojson",
+          "geometry": "Polygon",
+          "features": 3,
+          "default": false
+        },
+        {
+          "name": "overlay_conservation_watershed",
+          "title": "Conservation Watershed Overlay",
+          "path": "data/usfs_gmug/overlay_conservation_watershed.geojson",
+          "geometry": "Polygon",
+          "features": 1,
+          "default": false
+        }
+      ]
+    },
+    {
+      "key": "gunnison_county",
+      "title": "Gunnison County",
+      "layers": [
+        {
+          "name": "parcels",
+          "title": "Tax Parcels",
+          "path": "data/gunnison_county/parcels.geojson",
+          "geometry": "Polygon",
+          "features": 3192,
+          "default": false
+        },
+        {
+          "name": "roads",
+          "title": "Roads",
+          "path": "data/gunnison_county/roads.geojson",
+          "geometry": "LineString",
+          "features": 108,
+          "default": true
+        },
+        {
+          "name": "jurisdictions",
+          "title": "Jurisdictions",
+          "path": "data/gunnison_county/jurisdictions.geojson",
+          "geometry": "Polygon",
+          "features": 14,
+          "default": false
+        },
+        {
+          "name": "towns",
+          "title": "Towns",
+          "path": "data/gunnison_county/towns.geojson",
+          "geometry": "Polygon",
+          "features": 2,
+          "default": false
+        },
+        {
+          "name": "subdivisions",
+          "title": "Subdivisions",
+          "path": "data/gunnison_county/subdivisions.geojson",
+          "geometry": "Polygon",
+          "features": 136,
+          "default": false
+        },
+        {
+          "name": "plss_sections",
+          "title": "PLSS Sections",
+          "path": "data/gunnison_county/plss_sections.geojson",
+          "geometry": "Polygon",
+          "features": 46,
+          "default": false
+        },
+        {
+          "name": "addresses",
+          "title": "Address Points",
+          "path": "data/gunnison_county/addresses.geojson",
+          "geometry": "Point",
+          "features": 1307,
+          "default": false
+        },
+        {
+          "name": "driveways",
+          "title": "Driveways",
+          "path": "data/gunnison_county/driveways.geojson",
+          "geometry": "LineString",
+          "features": 22,
+          "default": false
+        },
+        {
+          "name": "exempt_properties",
+          "title": "Exempt Properties",
+          "path": "data/gunnison_county/exempt_properties.geojson",
+          "geometry": "MultiPolygon",
+          "features": 6,
+          "default": false
+        },
+        {
+          "name": "tax_districts",
+          "title": "Tax Districts",
+          "path": "data/gunnison_county/tax_districts.geojson",
+          "geometry": "Polygon",
+          "features": 11,
+          "default": false
+        },
+        {
+          "name": "voting_precincts",
+          "title": "Voting Precincts",
+          "path": "data/gunnison_county/voting_precincts.geojson",
+          "geometry": "Polygon",
+          "features": 2,
+          "default": false
+        },
+        {
+          "name": "trails",
+          "title": "Trails",
+          "path": "data/gunnison_county/trails.geojson",
+          "geometry": "LineString",
+          "features": 78,
+          "default": true
+        },
+        {
+          "name": "streams",
+          "title": "Streams",
+          "path": "data/gunnison_county/streams.geojson",
+          "geometry": "LineString",
+          "features": 6,
+          "default": true
+        },
+        {
+          "name": "lakes",
+          "title": "Lakes & Ponds",
+          "path": "data/gunnison_county/lakes.geojson",
+          "geometry": "Polygon",
+          "features": 20,
+          "default": true
+        },
+        {
+          "name": "public_lands",
+          "title": "Public Lands",
+          "path": "data/gunnison_county/public_lands.geojson",
+          "geometry": "MultiPolygon",
+          "features": 6,
+          "default": false
+        },
+        {
+          "name": "milemarkers",
+          "title": "Mile Markers",
+          "path": "data/gunnison_county/milemarkers.geojson",
+          "geometry": "Point",
+          "features": 17,
+          "default": false
+        }
+      ]
+    }
+  ],
+  "generated_from": "clip_layers.py"
+}

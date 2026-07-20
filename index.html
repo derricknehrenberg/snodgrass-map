@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snodgrass Recreation Emphasis Area — Stakeholder Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+  :root {
+    --panel-bg: #ffffff;
+    --panel-border: #d8d4cc;
+    --ink: #2b2b28;
+    --ink-soft: #6b675f;
+    --accent: #1f6f43;
+    --boundary: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); }
+  #app { display: flex; flex-direction: column; height: 100%; }
+  header {
+    background: #243b2f; color: #f4f1ea; padding: 10px 16px;
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+  header .sub { font-size: 12.5px; color: #cfc9bb; }
+  #main { flex: 1; display: flex; min-height: 0; }
+  #map { flex: 1; min-width: 0; }
+  #panel {
+    width: 310px; max-width: 45vw; overflow-y: auto; background: var(--panel-bg);
+    border-left: 1px solid var(--panel-border); padding: 10px 12px 30px;
+  }
+  #panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); margin: 14px 0 6px; }
+  .group { margin-bottom: 4px; }
+  .group > .gtitle {
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+    font-weight: 650; font-size: 13.5px; padding: 7px 6px; border-radius: 6px;
+  }
+  .group > .gtitle:hover { background: #f2efe9; }
+  .group > .gtitle .chev { transition: transform .15s; font-size: 11px; color: var(--ink-soft); }
+  .group.open > .gtitle .chev { transform: rotate(90deg); }
+  .glayers { display: none; margin: 0 0 6px 10px; }
+  .group.open .glayers { display: block; }
+  .lrow { padding: 3px 4px; border-radius: 5px; font-size: 13px; }
+  .lrow:hover { background: #f6f4ef; }
+  .lrow label { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  .lrow .count { margin-left: auto; font-size: 11px; color: var(--ink-soft); }
+  .legend { margin: 2px 0 4px 24px; font-size: 11.5px; color: var(--ink-soft); }
+  .legend .chip { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
+  .swatch { width: 14px; height: 10px; border-radius: 2px; flex: 0 0 auto; border: 1px solid rgba(0,0,0,.25); }
+  .swatch.line { height: 3px; border: none; border-radius: 2px; }
+  .swatch.pt { width: 9px; height: 9px; border-radius: 50%; }
+  #note { font-size: 11.5px; color: var(--ink-soft); line-height: 1.45; border-top: 1px solid var(--panel-border); margin-top: 14px; padding-top: 10px; }
+  .leaflet-popup-content { font-size: 12.5px; line-height: 1.45; }
+  .leaflet-popup-content .ptitle { font-weight: 650; margin-bottom: 4px; font-size: 13px; }
+  .leaflet-popup-content table { border-collapse: collapse; }
+  .leaflet-popup-content td { padding: 1px 6px 1px 0; vertical-align: top; }
+  .leaflet-popup-content td.k { color: var(--ink-soft); white-space: nowrap; }
+  #paneltoggle {
+    display: none; position: absolute; top: 76px; right: 10px; z-index: 900;
+    background: #fff; border: 1px solid var(--panel-border); border-radius: 6px;
+    padding: 6px 10px; font-size: 13px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  }
+  @media (max-width: 720px) {
+    #panel { position: absolute; right: 0; top: 60px; bottom: 0; z-index: 899; display: none; max-width: 85vw; }
+    #panel.show { display: block; }
+    #paneltoggle { display: block; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Snodgrass Recreation Emphasis Area — Stakeholder Map</h1>
+    <span class="sub">Draft working map for partner coordination · assembled by MetRec · not an official survey product</span>
+  </header>
+  <div id="main">
+    <div id="map"></div>
+    <button id="paneltoggle">Layers</button>
+    <div id="panel">
+      <h2>Layers</h2>
+      <div id="groups"></div>
+      <div id="note">
+        <b>Sources:</b> GMUG Forest Plan Final Decision GIS (USFS, 2024-06-13); Gunnison County GIS.
+        All layers clipped to the draft Snodgrass coordination boundary (red dash).
+        Positions are approximate — verify with authoritative records before design or legal use.
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+"use strict";
+
+// ---------- palettes ----------
+const CAT_PALETTE = ["#4477aa","#ee6677","#228833","#ccbb44","#66ccee","#aa3377",
+                     "#bbbbbb","#997700","#6699cc","#994455","#225555","#e07b39"];
+
+// Management Area colors keyed by code prefix (matches FS map conventions loosely)
+const MA_COLORS = [
+  [/^1\.1/,  "#2d6a4f"],   // Wilderness
+  [/^2\.1\/4\.2/, "#c2417f"], // SIA + Rec Emphasis overlay
+  [/^2\.1\/3\.1/, "#7b5aa6"], // SIA + Roadless overlay
+  [/^2\.1/,  "#8e7cc3"],   // Special Interest Area
+  [/^3\.1/,  "#a3a656"],   // CO Roadless
+  [/^4\.1/,  "#e69138"],   // Mountain Resort
+  [/^4\.2/,  "#d94f3d"],   // Recreation Emphasis Area
+  [/^5/,     "#9ec97f"],   // General Forest
+];
+function maColor(v) {
+  v = String(v || "");
+  for (const [re, c] of MA_COLORS) if (re.test(v)) return c;
+  return "#9aa0a6";
+}
+
+// ---------- per-layer display config ----------
+// kind: poly-cat (categorical fill), poly-outline, line, line-cat, point
+const LAYER_STYLE = {
+  "usfs_gmug/management_areas":   { kind:"poly-cat", field:"Final_DECISION_ManagementArea", color: maColor, fillOp:.42 },
+  "usfs_gmug/ros_summer":         { kind:"poly-cat", field:"ROS_Summer_FinalDecision", fillOp:.4 },
+  "usfs_gmug/ros_winter":         { kind:"poly-cat", field:"ROS_Winter_FinalDecision", fillOp:.4 },
+  "usfs_gmug/scenic_integrity":   { kind:"poly-cat", field:"SIO_FinalDecision", fillOp:.4 },
+  "usfs_gmug/timber_suitability": { kind:"poly-cat", field:"TimberSuitability", fillOp:.35 },
+  "usfs_gmug/overlay_wild_scenic_rivers":   { kind:"poly-cat", field:null, fixed:"#2a7fb8", fillOp:.35 },
+  "usfs_gmug/overlay_conservation_watershed":{ kind:"poly-cat", field:null, fixed:"#1d7d74", fillOp:.3 },
+  "gunnison_county/parcels":       { kind:"poly-outline", color:"#8a8378", weight:.8 },
+  "gunnison_county/roads":         { kind:"line", color:"#4a4a48", weight:2 },
+  "gunnison_county/trails":        { kind:"line", color:"#b3591f", weight:2.4, dash:"6 4" },
+  "gunnison_county/streams":       { kind:"line", color:"#3a7bd5", weight:1.8 },
+  "gunnison_county/driveways":     { kind:"line", color:"#9a9a98", weight:1.2, dash:"3 3" },
+  "gunnison_county/lakes":         { kind:"poly-cat", field:null, fixed:"#5b9bd5", fillOp:.55 },
+  "gunnison_county/public_lands":  { kind:"poly-cat", field:"Owner", fillOp:.35 },
+  "gunnison_county/jurisdictions": { kind:"poly-cat", field:"Name", fillOp:.15 },
+  "gunnison_county/towns":         { kind:"poly-outline", color:"#7b3fa0", weight:2.2 },
+  "gunnison_county/subdivisions":  { kind:"poly-outline", color:"#c07f39", weight:1.2 },
+  "gunnison_county/plss_sections": { kind:"poly-outline", color:"#777", weight:1, dash:"5 4" },
+  "gunnison_county/exempt_properties": { kind:"poly-cat", field:null, fixed:"#7d6ba0", fillOp:.3 },
+  "gunnison_county/tax_districts": { kind:"poly-outline", color:"#4b8a8a", weight:1.4 },
+  "gunnison_county/voting_precincts": { kind:"poly-outline", color:"#a05252", weight:1.4 },
+  "gunnison_county/addresses":     { kind:"point", color:"#666", radius:3 },
+  "gunnison_county/milemarkers":   { kind:"point", color:"#1f6f43", radius:4 },
+};
+
+const FIELD_LABELS = {
+  Final_DECISION_ManagementArea: "Management area", Final_Decision_MA_Description: "Description",
+  Final_AltB_UniquePlaceName: "Place name", RoadlessAreaName: "Roadless area", Final_AltB_GIS_Acres: "GIS acres",
+  ROS_Summer_FinalDecision: "ROS class", ROS_Summer_Description: "Description",
+  ROS_Winter_FinalDecision: "ROS class", ROS_Winter_Description: "Description",
+  SIO_FinalDecision: "Scenic integrity objective", GIS_Acres: "GIS acres", GIS_ACRES: "GIS acres",
+  TimberSuitability: "Timber suitability", COVER_TYPE: "Cover type", Ecosystem: "Ecosystem",
+  ParcelNumb: "Parcel #", OWNERNAME: "Owner", ACCOUNTTYP: "Account type", GISAcres: "GIS acres",
+  PROPERTYLO: "Property location", SUBDIVISIO: "Subdivision",
+  Name: "Name", Label: "Label", Type: "Type", Length_mil: "Length (mi)",
+  name: "Name", trail_num: "Trail #", surface: "Surface", manager: "Manager", length_mi_: "Length (mi)",
+  hiking: "Hiking", horse: "Horse", bike: "Bike", motorcycle: "Motorcycle", atv: "ATV",
+  snowmobile: "Snowmobile", ski: "Ski", dogs: "Dogs", access: "Access", seasonalit: "Seasonality",
+  Miles: "Miles", DOW_NAME: "Name (DOW)", NAME1: "Name", FEATURE: "Feature", GISAcres: "GIS acres",
+  Owner: "Owner", Group: "Group", County: "County",
+  MilePost: "Milepost", Roadname: "Road", Notes: "Notes", PlatDate: "Plat date",
+};
+
+const TITLE_FIELDS = ["name","Name","NAME1","DOW_NAME","OWNERNAME","Final_DECISION_ManagementArea",
+  "ROS_Summer_FinalDecision","ROS_Winter_FinalDecision","SIO_FinalDecision","TimberSuitability",
+  "Owner","MilePost","Label"];
+
+// ---------- map ----------
+const map = L.map("map", { zoomSnap: .5 });
+const baseTopo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+  { maxZoom: 17, attribution: "© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)" });
+const baseImagery = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  { maxZoom: 19, attribution: "Imagery © Esri & contributors" });
+const baseOSM = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+  { maxZoom: 19, attribution: "© OpenStreetMap contributors" });
+baseTopo.addTo(map);
+L.control.layers({ "Topo": baseTopo, "Imagery": baseImagery, "Streets": baseOSM }, null,
+  { position: "topleft", collapsed: true }).addTo(map);
+L.control.scale({ imperial: true, metric: false }).addTo(map);
+
+const panes = { poly: "polyPane", line: "linePane", point: "pointPane" };
+map.createPane("polyPane").style.zIndex = 410;
+map.createPane("linePane").style.zIndex = 440;
+map.createPane("pointPane").style.zIndex = 470;
+map.createPane("boundaryPane").style.zIndex = 480;
+
+function popupHtml(layerKey, props) {
+  const rows = [];
+  let title = null;
+  for (const f of TITLE_FIELDS) {
+    if (props[f] !== undefined && props[f] !== null && String(props[f]).trim() !== "") { title = props[f]; break; }
+  }
+  for (const [k, v] of Object.entries(props)) {
+    if (v === null || v === undefined || String(v).trim() === "") continue;
+    const label = FIELD_LABELS[k] || k;
+    let val = v;
+    if (typeof v === "number" && !Number.isInteger(v)) val = v.toFixed(2);
+    rows.push(`<tr><td class="k">${label}</td><td>${val}</td></tr>`);
+  }
+  return `<div class="ptitle">${title ?? ""}</div><table>${rows.join("")}</table>`;
+}
+
+// categorical color assignment (stable order: sorted unique values)
+function buildCatColors(features, field) {
+  const vals = [...new Set(features.map(f => String(f.properties?.[field] ?? "—")))].sort();
+  const m = new Map();
+  vals.forEach((v, i) => m.set(v, CAT_PALETTE[i % CAT_PALETTE.length]));
+  return m;
+}
+
+const state = { layers: {}, legends: {} };
+
+function makeLeafletLayer(key, gj) {
+  const cfg = LAYER_STYLE[key] || { kind: "poly-outline", color: "#888", weight: 1 };
+  let catMap = null;
+  const legend = [];
+
+  const colorFor = (props) => {
+    if (cfg.fixed) return cfg.fixed;
+    if (typeof cfg.color === "function") return cfg.color(props?.[cfg.field]);
+    if (cfg.field) {
+      catMap = catMap || buildCatColors(gj.features, cfg.field);
+      return catMap.get(String(props?.[cfg.field] ?? "—"));
+    }
+    return cfg.color || "#888";
+  };
+
+  const opts = {
+    pane: cfg.kind === "line" ? panes.line : cfg.kind === "point" ? panes.point : panes.poly,
+    style: f => {
+      const c = colorFor(f.properties);
+      if (cfg.kind === "poly-cat") return { color: "#5f5b54", weight: .7, fillColor: c, fillOpacity: cfg.fillOp ?? .4 };
+      if (cfg.kind === "poly-outline") return { color: cfg.color, weight: cfg.weight ?? 1, dashArray: cfg.dash, fill: true, fillOpacity: 0.02 };
+      return { color: c, weight: cfg.weight ?? 2, dashArray: cfg.dash };
+    },
+    pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+      pane: panes.point, radius: cfg.radius ?? 3.5, color: "#fff", weight: .8,
+      fillColor: cfg.color, fillOpacity: .9 }),
+    onEachFeature: (f, lyr) => lyr.bindPopup(() => popupHtml(key, f.properties || {}), { maxWidth: 340 }),
+  };
+  const leaflet = L.geoJSON(gj, opts);
+
+  // legend entries
+  if (cfg.kind === "poly-cat" && cfg.field) {
+    catMap = catMap || buildCatColors(gj.features, cfg.field);
+    const entries = typeof cfg.color === "function"
+      ? [...new Set(gj.features.map(f => String(f.properties?.[cfg.field] ?? "—")))].sort().map(v => [v, cfg.color(v)])
+      : [...catMap.entries()];
+    for (const [v, c] of entries) legend.push({ label: v, color: c, cls: "swatch" });
+  } else if (cfg.kind === "poly-cat" && cfg.fixed) {
+    legend.push({ label: "extent", color: cfg.fixed, cls: "swatch" });
+  } else if (cfg.kind === "line") {
+    legend.push({ label: "", color: cfg.color, cls: "swatch line" });
+  } else if (cfg.kind === "point") {
+    legend.push({ label: "", color: cfg.color, cls: "swatch pt" });
+  } else if (cfg.kind === "poly-outline") {
+    legend.push({ label: "", color: cfg.color, cls: "swatch line" });
+  }
+  return { leaflet, legend };
+}
+
+async function loadGeoJSON(path) {
+  if (window.__SNODGRASS_DATA__) {
+    const d = window.__SNODGRASS_DATA__[path];
+    if (!d) throw new Error("missing embedded layer " + path);
+    return d;
+  }
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(r.status + " " + path);
+  return r.json();
+}
+
+async function init() {
+  // boundary
+  const bnd = await loadGeoJSON("data/boundary/snodgrass_boundary.geojson");
+  const bndLayer = L.geoJSON(bnd, { pane: "boundaryPane", interactive: false,
+    style: { color: "#c0392b", weight: 2.5, dashArray: "8 6", fill: false } }).addTo(map);
+  map.fitBounds(bndLayer.getBounds().pad(0.06));
+
+  const manifest = await loadGeoJSON("data/layers_index.json");
+  const groupsEl = document.getElementById("groups");
+
+  for (const group of manifest.groups) {
+    const gdiv = document.createElement("div");
+    gdiv.className = "group open";
+    gdiv.innerHTML = `<div class="gtitle"><span class="chev">▶</span>${group.title}</div><div class="glayers"></div>`;
+    gdiv.querySelector(".gtitle").addEventListener("click", () => gdiv.classList.toggle("open"));
+    const holder = gdiv.querySelector(".glayers");
+
+    for (const lyr of group.layers) {
+      const key = `${group.key}/${lyr.name}`;
+      const row = document.createElement("div");
+      row.className = "lrow";
+      row.innerHTML = `<label><input type="checkbox"> ${lyr.title}<span class="count">${lyr.features}</span></label><div class="legend"></div>`;
+      const cb = row.querySelector("input");
+      const legendEl = row.querySelector(".legend");
+      holder.appendChild(row);
+
+      cb.addEventListener("change", async () => {
+        if (cb.checked) {
+          if (!state.layers[key]) {
+            cb.disabled = true;
+            try {
+              const gj = await loadGeoJSON(lyr.path);
+              state.layers[key] = makeLeafletLayer(key, gj);
+            } catch (e) {
+              legendEl.textContent = "failed to load: " + e.message;
+              cb.checked = false; cb.disabled = false; return;
+            }
+            cb.disabled = false;
+          }
+          state.layers[key].leaflet.addTo(map);
+          legendEl.innerHTML = state.layers[key].legend
+            .filter(en => en.label !== "" || state.layers[key].legend.length > 1)
+            .map(en => `<div class="chip"><span class="${en.cls}" style="background:${en.color}"></span>${en.label}</div>`)
+            .join("");
+        } else {
+          if (state.layers[key]) map.removeLayer(state.layers[key].leaflet);
+          legendEl.innerHTML = "";
+        }
+      });
+      if (lyr.default) { cb.checked = true; cb.dispatchEvent(new Event("change")); }
+    }
+    groupsEl.appendChild(gdiv);
+  }
+}
+
+document.getElementById("paneltoggle").addEventListener("click",
+  () => document.getElementById("panel").classList.toggle("show"));
+
+init().catch(e => {
+  document.getElementById("groups").innerHTML =
+    `<div style="color:#a33">Failed to initialize: ${e.message}</div>`;
+});
+</script>
+</body>
+</html>
