@@ -4,7 +4,7 @@ A common working map for partners coordinating recreation development in the
 Snodgrass Recreation Emphasis Area (GMUG National Forest Management Area 4.2),
 convened by the US Forest Service and coordinated by MetRec.
 
-**Live map:** http://www.derricknehrenberg.com/snodgrass-map/
+**Live map:** https://derricknehrenberg.github.io/snodgrass-map/
 
 Every layer is clipped to a draft coordination boundary around Snodgrass
 Mountain (the red dashed rectangle on the map). This is a planning aid, not a
