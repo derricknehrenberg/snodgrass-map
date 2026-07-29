@@ -125,7 +125,7 @@ const LAYER_STYLE = {
   "usfs_gmug/timber_suitability": { kind:"poly-cat", field:"TimberSuitability", fillOp:.35 },
   "usfs_gmug/overlay_wild_scenic_rivers":   { kind:"poly-cat", field:null, fixed:"#2a7fb8", fillOp:.35 },
   "usfs_gmug/overlay_conservation_watershed":{ kind:"poly-cat", field:null, fixed:"#1d7d74", fillOp:.3 },
-  "gunnison_county/parcels":       { kind:"poly-outline", color:"#8a8378", weight:.8 },
+  "gunnison_county/parcels":       { kind:"poly-outline", color:"#2e7d32", weight:1.6 },
   "gunnison_county/roads":         { kind:"line", color:"#4a4a48", weight:2 },
   "gunnison_county/trails":        { kind:"line", color:"#b3591f", weight:2.4, dash:"6 4" },
   "gunnison_county/streams":       { kind:"line", color:"#3a7bd5", weight:1.8 },
@@ -192,7 +192,7 @@ function popupHtml(layerKey, props) {
     if (props[f] !== undefined && props[f] !== null && String(props[f]).trim() !== "") { title = props[f]; break; }
   }
   for (const [k, v] of Object.entries(props)) {
-    if (v === null || v === undefined || String(v).trim() === "") continue;
+    if (v === null || v === undefined || /^[\s,.;:-]*$/.test(String(v))) continue;
     const label = FIELD_LABELS[k] || k;
     let val = v;
     if (typeof v === "number" && !Number.isInteger(v)) val = v.toFixed(2);
@@ -210,6 +210,14 @@ function buildCatColors(features, field) {
 }
 
 const state = { layers: {}, legends: {} };
+
+// click-to-highlight: one selected feature at a time, thick dark outline
+let selected = null; // { parent, layer }
+function clearSelection() {
+  if (!selected) return;
+  try { selected.parent.resetStyle(selected.layer); } catch (e) {}
+  selected = null;
+}
 
 function makeLeafletLayer(key, gj) {
   const cfg = LAYER_STYLE[key] || { kind: "poly-outline", color: "#888", weight: 1 };
@@ -237,7 +245,21 @@ function makeLeafletLayer(key, gj) {
     pointToLayer: (f, latlng) => L.circleMarker(latlng, {
       pane: panes.point, radius: cfg.radius ?? 3.5, color: "#fff", weight: .8,
       fillColor: cfg.color, fillOpacity: .9 }),
-    onEachFeature: (f, lyr) => lyr.bindPopup(() => popupHtml(key, f.properties || {}), { maxWidth: 340 }),
+    onEachFeature: (f, lyr) => {
+      lyr.bindPopup(() => popupHtml(key, f.properties || {}), { maxWidth: 340 });
+      lyr.on("popupopen", () => {
+        clearSelection();
+        if (!lyr.setStyle) return;
+        const hl = { color: "#1a1a1a", weight: (cfg.weight ?? 2) + 2.5, dashArray: null };
+        if (cfg.kind === "poly-cat") hl.fillOpacity = Math.min(1, (cfg.fillOp ?? .4) + .15);
+        lyr.setStyle(hl);
+        if (lyr.bringToFront) lyr.bringToFront();
+        selected = { parent: leaflet, layer: lyr };
+      });
+      lyr.on("popupclose", () => {
+        if (selected && selected.layer === lyr) clearSelection();
+      });
+    },
   };
   const leaflet = L.geoJSON(gj, opts);
 
