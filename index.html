@@ -61,6 +61,24 @@
     background: #fff; border: 1px solid var(--panel-border); border-radius: 6px;
     padding: 6px 10px; font-size: 13px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2);
   }
+  #infocard {
+    display: none; position: absolute; left: 10px; bottom: 34px; z-index: 950;
+    width: 320px; max-width: 70vw; max-height: 45%; overflow-y: auto;
+    background: #fff; border: 1px solid var(--panel-border); border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.25); padding: 10px 12px;
+    font-size: 12.5px; line-height: 1.45;
+  }
+  #infocard.show { display: block; }
+  #infocard .ptitle { font-weight: 650; margin: 0 22px 4px 0; font-size: 13px; }
+  #infocard .layer-tag { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+  #infocard table { border-collapse: collapse; }
+  #infocard td { padding: 1px 6px 1px 0; vertical-align: top; }
+  #infocard td.k { color: var(--ink-soft); white-space: nowrap; }
+  #infocard .close {
+    position: absolute; top: 6px; right: 8px; border: none; background: none;
+    font-size: 17px; color: var(--ink-soft); cursor: pointer; padding: 2px 6px;
+  }
+  #infocard .close:hover { color: var(--ink); }
   @media (max-width: 720px) {
     #panel { position: absolute; right: 0; top: 60px; bottom: 0; z-index: 899; display: none; max-width: 85vw; }
     #panel.show { display: block; }
@@ -76,6 +94,10 @@
   </header>
   <div id="main">
     <div id="map"></div>
+    <div id="infocard">
+      <button class="close" title="Close">×</button>
+      <div id="infocontent"></div>
+    </div>
     <button id="paneltoggle">Layers</button>
     <div id="panel">
       <h2>Layers</h2>
@@ -185,7 +207,7 @@ map.createPane("linePane").style.zIndex = 440;
 map.createPane("pointPane").style.zIndex = 470;
 map.createPane("boundaryPane").style.zIndex = 480;
 
-function popupHtml(layerKey, props) {
+function popupHtml(layerTitle, props) {
   const rows = [];
   let title = null;
   for (const f of TITLE_FIELDS) {
@@ -196,9 +218,21 @@ function popupHtml(layerKey, props) {
     const label = FIELD_LABELS[k] || k;
     let val = v;
     if (typeof v === "number" && !Number.isInteger(v)) val = v.toFixed(2);
+    else if (typeof v === "string") val = v.replace(/^[\s,;]+|[\s,;]+$/g, "");
     rows.push(`<tr><td class="k">${label}</td><td>${val}</td></tr>`);
   }
-  return `<div class="ptitle">${title ?? ""}</div><table>${rows.join("")}</table>`;
+  return `<div class="layer-tag">${layerTitle}</div>` +
+         `<div class="ptitle">${title ?? ""}</div><table>${rows.join("")}</table>`;
+}
+
+const infoCard = () => document.getElementById("infocard");
+function showInfo(html) {
+  document.getElementById("infocontent").innerHTML = html;
+  infoCard().classList.add("show");
+}
+function hideInfo() {
+  infoCard().classList.remove("show");
+  clearSelection();
 }
 
 // categorical color assignment (stable order: sorted unique values)
@@ -219,7 +253,7 @@ function clearSelection() {
   selected = null;
 }
 
-function makeLeafletLayer(key, gj) {
+function makeLeafletLayer(key, gj, layerTitle) {
   const cfg = LAYER_STYLE[key] || { kind: "poly-outline", color: "#888", weight: 1 };
   let catMap = null;
   const legend = [];
@@ -246,18 +280,17 @@ function makeLeafletLayer(key, gj) {
       pane: panes.point, radius: cfg.radius ?? 3.5, color: "#fff", weight: .8,
       fillColor: cfg.color, fillOpacity: .9 }),
     onEachFeature: (f, lyr) => {
-      lyr.bindPopup(() => popupHtml(key, f.properties || {}), { maxWidth: 340 });
-      lyr.on("popupopen", () => {
+      lyr.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
         clearSelection();
-        if (!lyr.setStyle) return;
-        const hl = { color: "#1a1a1a", weight: (cfg.weight ?? 2) + 2.5, dashArray: null };
-        if (cfg.kind === "poly-cat") hl.fillOpacity = Math.min(1, (cfg.fillOp ?? .4) + .15);
-        lyr.setStyle(hl);
-        if (lyr.bringToFront) lyr.bringToFront();
-        selected = { parent: leaflet, layer: lyr };
-      });
-      lyr.on("popupclose", () => {
-        if (selected && selected.layer === lyr) clearSelection();
+        if (lyr.setStyle) {
+          const hl = { color: "#1a1a1a", weight: (cfg.weight ?? 2) + 2.5, dashArray: null };
+          if (cfg.kind === "poly-cat") hl.fillOpacity = Math.min(1, (cfg.fillOp ?? .4) + .15);
+          lyr.setStyle(hl);
+          if (lyr.bringToFront) lyr.bringToFront();
+          selected = { parent: leaflet, layer: lyr };
+        }
+        showInfo(popupHtml(layerTitle, f.properties || {}));
       });
     },
   };
@@ -325,7 +358,7 @@ async function init() {
             cb.disabled = true;
             try {
               const gj = await loadGeoJSON(lyr.path);
-              state.layers[key] = makeLeafletLayer(key, gj);
+              state.layers[key] = makeLeafletLayer(key, gj, lyr.title);
             } catch (e) {
               legendEl.textContent = "failed to load: " + e.message;
               cb.checked = false; cb.disabled = false; return;
@@ -338,7 +371,10 @@ async function init() {
             .map(en => `<div class="chip"><span class="${en.cls}" style="background:${en.color}"></span>${en.label}</div>`)
             .join("");
         } else {
-          if (state.layers[key]) map.removeLayer(state.layers[key].leaflet);
+          if (state.layers[key]) {
+            if (selected && selected.parent === state.layers[key].leaflet) hideInfo();
+            map.removeLayer(state.layers[key].leaflet);
+          }
           legendEl.innerHTML = "";
         }
       });
@@ -350,6 +386,8 @@ async function init() {
 
 document.getElementById("paneltoggle").addEventListener("click",
   () => document.getElementById("panel").classList.toggle("show"));
+document.querySelector("#infocard .close").addEventListener("click", hideInfo);
+map.on("click", hideInfo);
 
 init().catch(e => {
   document.getElementById("groups").innerHTML =
