@@ -39,9 +39,10 @@ def build_catalog(raw, qfield):
     pel = os.path.join(raw, "Gunnison County", "Pelletier")
     C = []
 
-    def add(src, layer, group, name, title, fields=None, default=False):
+    def add(src, layer, group, name, title, fields=None, default=False, set_fields=None):
         C.append(dict(src=src, layer=layer, group=group, name=name,
-                      title=title, fields=fields, default=default))
+                      title=title, fields=fields, default=default,
+                      set_fields=set_fields))
 
     # --- US Forest Service: GMUG Forest Plan 2024 (Final Decision) ---
     add(gdb, "GMUG_MAs_FinalDecision_20240613", "usfs_gmug",
@@ -109,12 +110,19 @@ def build_catalog(raw, qfield):
         "public_lands", "Public Lands", ["Owner", "Group", "Name", "County"])
     add(os.path.join(qfield, "Milemarkers.gpkg"), None, "gunnison_county",
         "milemarkers", "Mile Markers", ["MilePost", "Roadname", "Type"])
+
+    # --- Rocky Mountain Biological Laboratory ---
+    add(os.path.join(raw, "RMBL", "RMBL_research_areas_2026.zip"), None, "rmbl",
+        "research_areas", "Research Areas (2026)",
+        fields=[], set_fields={"Name": "RMBL research area (2026)"}, default=True)
     return C
 
 GROUP_TITLES = {
     "usfs_gmug": "US Forest Service — GMUG Forest Plan 2024",
     "gunnison_county": "Gunnison County",
+    "rmbl": "Rocky Mountain Biological Laboratory",
 }
+GROUP_ORDER = ("usfs_gmug", "gunnison_county", "rmbl")
 
 
 def main():
@@ -146,55 +154,67 @@ def main():
 
     for item in build_catalog(args.raw_gis, qfield):
         label = f"{item['group']}/{item['name']}"
+        out_dir = os.path.join(REPO, "data", item["group"])
+        out_path = os.path.join(out_dir, item["name"] + ".geojson")
+
+        cached = False
         try:
             gdf = (gpd.read_file(item["src"], layer=item["layer"])
                    if item["layer"] else gpd.read_file(item["src"]))
         except Exception as e:
-            report.append((label, "READ ERROR", str(e)[:100]))
-            continue
-        if gdf.crs is None:
-            report.append((label, "SKIP", "no CRS defined"))
-            continue
+            # Raw source unavailable — keep the previously clipped output so the
+            # layer doesn't silently vanish from the map.
+            if os.path.exists(out_path):
+                gdf = gpd.read_file(out_path)
+                cached = True
+            else:
+                report.append((label, "READ ERROR", str(e)[:100]))
+                continue
 
-        mask = gpd.GeoSeries([bnd_union], crs="EPSG:4326").to_crs(gdf.crs).iloc[0]
-        gdf = gdf[gdf.geometry.notna() & gdf.geometry.intersects(mask)]
-        if len(gdf) == 0:
-            report.append((label, "EMPTY", "no features inside boundary"))
-            continue
-        gdf = gdf.clip(mask)
-        gdf = gdf[~gdf.geometry.is_empty]
-        if len(gdf) == 0:
-            report.append((label, "EMPTY", "clip produced no geometry"))
-            continue
+        if not cached:
+            if gdf.crs is None:
+                report.append((label, "SKIP", "no CRS defined"))
+                continue
+            mask = gpd.GeoSeries([bnd_union], crs="EPSG:4326").to_crs(gdf.crs).iloc[0]
+            gdf = gdf[gdf.geometry.notna() & gdf.geometry.intersects(mask)]
+            if len(gdf) == 0:
+                report.append((label, "EMPTY", "no features inside boundary"))
+                continue
+            gdf = gdf.clip(mask)
+            gdf = gdf[~gdf.geometry.is_empty]
+            if len(gdf) == 0:
+                report.append((label, "EMPTY", "clip produced no geometry"))
+                continue
 
-        if item["fields"]:
-            keep = [f for f in item["fields"] if f in gdf.columns]
-            gdf = gdf[keep + ["geometry"]]
-        else:
-            gdf = gdf.drop(columns=[c for c in ("Shape_Length", "Shape_Area", "Shape_Leng")
-                                    if c in gdf.columns])
-        gdf.geometry = shapely.force_2d(gdf.geometry)
+            if item["fields"] is not None:
+                keep = [f for f in item["fields"] if f in gdf.columns]
+                gdf = gdf[keep + ["geometry"]]
+            else:
+                gdf = gdf.drop(columns=[c for c in ("Shape_Length", "Shape_Area", "Shape_Leng")
+                                        if c in gdf.columns])
+            for k, v in (item.get("set_fields") or {}).items():
+                gdf[k] = v
+            gdf.geometry = shapely.force_2d(gdf.geometry)
 
-        # GeoPackage (projected, for GIS users)
+            # GeoJSON (WGS84, for the web map)
+            os.makedirs(out_dir, exist_ok=True)
+            wgs = gdf.to_crs("EPSG:4326")
+            pyogrio.write_dataframe(wgs, out_path, driver="GeoJSON", COORDINATE_PRECISION=6)
+
+        # GeoPackage (projected, for GIS users) — written for fresh AND cached layers
         gdf.to_crs(GPKG_CRS).to_file(gpkg_out, layer=label.replace("/", "__"), driver="GPKG")
 
-        # GeoJSON (WGS84, for the web map)
-        out_dir = os.path.join(REPO, "data", item["group"])
-        os.makedirs(out_dir, exist_ok=True)
-        out_path = os.path.join(out_dir, item["name"] + ".geojson")
-        wgs = gdf.to_crs("EPSG:4326")
-        pyogrio.write_dataframe(wgs, out_path, driver="GeoJSON", COORDINATE_PRECISION=6)
-
         size_kb = os.path.getsize(out_path) / 1024
-        gtype = wgs.geom_type.mode()[0]
-        report.append((label, f"{len(gdf)} feats", f"{gtype}, {size_kb:.0f} KB"))
+        gtype = gdf.geom_type.mode()[0]
+        status = f"{len(gdf)} feats" + (" (cached)" if cached else "")
+        report.append((label, status, f"{gtype}, {size_kb:.0f} KB"))
 
         groups.setdefault(item["group"], []).append(dict(
             name=item["name"], title=item["title"],
             path=f"data/{item['group']}/{item['name']}.geojson",
             geometry=gtype, features=int(len(gdf)), default=item["default"]))
 
-    for gkey in ("usfs_gmug", "gunnison_county"):
+    for gkey in GROUP_ORDER:
         if gkey in groups:
             manifest["groups"].append(dict(key=gkey, title=GROUP_TITLES[gkey],
                                            layers=groups[gkey]))

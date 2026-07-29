@@ -195,6 +195,20 @@
           "default": false
         }
       ]
+    },
+    {
+      "key": "rmbl",
+      "title": "Rocky Mountain Biological Laboratory",
+      "layers": [
+        {
+          "name": "research_areas",
+          "title": "Research Areas (2026)",
+          "path": "data/rmbl/research_areas.geojson",
+          "geometry": "Polygon",
+          "features": 715,
+          "default": true
+        }
+      ]
     }
   ],
   "generated_from": "clip_layers.py"
