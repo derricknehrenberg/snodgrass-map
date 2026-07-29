@@ -33,10 +33,19 @@ GPKG_CRS = "EPSG:26913"  # NAD83 / UTM 13N — matches the GMUG Forest Plan data
 # Each entry: source path (relative to Raw GIS unless absolute), gdb layer name,
 # stakeholder group, output name, display title, curated fields (None = keep all),
 # and whether the web map turns it on by default.
+def county_dir(raw):
+    """The county folder has gone by a couple of names in OneDrive."""
+    for name in ("Gunnison County", "Gunnison County Parcels"):
+        p = os.path.join(raw, name)
+        if os.path.isdir(p):
+            return p
+    return os.path.join(raw, "Gunnison County")  # fallback; layers will cache
+
+
 def build_catalog(raw, qfield):
     gdb = os.path.join(raw, "GMUG Forest Plan 2024",
                        "GMUG_ForestPlan_FinalDecision_DataFeatures_20240613.gdb")
-    pel = os.path.join(raw, "Gunnison County", "Pelletier")
+    pel = os.path.join(county_dir(raw), "Pelletier")
     C = []
 
     def add(src, layer, group, name, title, fields=None, default=False, set_fields=None):
@@ -132,7 +141,7 @@ def main():
                     help="Folder holding the extracted QField .gpkg files")
     args = ap.parse_args()
 
-    qfield = args.qfield or os.path.join(args.raw_gis, "Gunnison County", "QField GeoPackages")
+    qfield = args.qfield or os.path.join(county_dir(args.raw_gis), "QField GeoPackages")
     boundary_path = os.path.join(args.raw_gis, "Snodgrass GIS Boundary.geojson")
     boundary = gpd.read_file(boundary_path)  # EPSG:4326
     bnd_union = boundary.union_all()
