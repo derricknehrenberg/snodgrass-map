@@ -24,6 +24,9 @@
   }
   header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: .2px; }
   header .sub { font-size: 12.5px; color: #cfc9bb; }
+  header .dl { margin-left: auto; font-size: 12.5px; color: #cfc9bb; }
+  header .dl a { color: #f4f1ea; text-decoration: none; border-bottom: 1px solid #6f8a7a; }
+  header .dl a:hover { border-bottom-color: #f4f1ea; }
   #main { flex: 1; display: flex; min-height: 0; }
   #map { flex: 1; min-width: 0; }
   #panel {
@@ -91,6 +94,11 @@
   <header>
     <h1>Snodgrass Recreation Emphasis Area — Stakeholder Map</h1>
     <span class="sub">Draft working map for partner coordination · assembled by MetRec · not an official survey product</span>
+    <!-- Absolute so the links still resolve from the emailable offline copy. -->
+    <span class="dl">Download:
+      <a href="https://derricknehrenberg.github.io/snodgrass-map/downloads/snodgrass_google_earth.kmz">Google Earth (KMZ)</a> ·
+      <a href="https://derricknehrenberg.github.io/snodgrass-map/downloads/snodgrass_clipped.gpkg">GIS (GeoPackage)</a>
+    </span>
   </header>
   <div id="main">
     <div id="map"></div>

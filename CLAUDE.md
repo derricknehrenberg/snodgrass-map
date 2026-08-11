@@ -14,8 +14,16 @@ Raw GIS (OneDrive, NOT in repo)
         ├─ data/layers_index.json         manifest index.html reads at runtime
         └─ downloads/snodgrass_clipped.gpkg   all layers, EPSG:26913 (UTM 13N)
    └─ scripts/build_offline.py   embeds data/ into downloads/snodgrass_map_offline.html
+   └─ scripts/build_kml.py       downloads/snodgrass_google_earth.kmz (Google Earth)
 index.html                        single-file Leaflet app (no build step, no framework)
 ```
+
+`build_kml.py` parses CAT_PALETTE / MA_COLORS / LAYER_STYLE / FIELD_LABELS /
+TITLE_FIELDS out of `index.html` rather than restating them, so the KMZ tracks
+the web map's styling automatically. Restyle index.html, rerun it, done. It
+only reads what is already in `data/`, so `hold=True` layers can never leak
+into the KMZ. KML has no dashed-line support — dashed web layers (PLSS
+sections, driveways, trails) draw solid in Google Earth.
 
 `index.html` fetches `data/layers_index.json` and lazy-loads each GeoJSON when
 its checkbox is first ticked. If `window.__SNODGRASS_DATA__` exists (offline
@@ -29,6 +37,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 RAW="/Users/derricknehrenberg/Library/CloudStorage/OneDrive-SharedLibraries-metrec/Recreation - Documents/Recreation Project Initiatives/2026/Snodgrass/Snodgrass Map Engine/Raw GIS"
 .venv/bin/python scripts/clip_layers.py --raw-gis "$RAW"
 .venv/bin/python scripts/build_offline.py
+.venv/bin/python scripts/build_kml.py
 
 python3 -m http.server 8741   # local preview at http://localhost:8741/
 ```
