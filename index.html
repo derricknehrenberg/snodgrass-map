@@ -24,9 +24,17 @@
   }
   header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: .2px; }
   header .sub { font-size: 12.5px; color: #cfc9bb; }
-  header .dl { margin-left: auto; font-size: 12.5px; color: #cfc9bb; }
-  header .dl a { color: #f4f1ea; text-decoration: none; border-bottom: 1px solid #6f8a7a; }
-  header .dl a:hover { border-bottom-color: #f4f1ea; }
+  header .dl { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  header .dl a {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #1f7ae0; color: #fff; font-size: 13px; font-weight: 600;
+    padding: 6px 13px; border-radius: 6px; text-decoration: none;
+    border: 1px solid #4b9bee; box-shadow: 0 1px 3px rgba(0,0,0,.28);
+    white-space: nowrap; transition: background .12s ease;
+  }
+  header .dl a:hover { background: #3b93f0; }
+  header .dl a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  header .dl .arrow { font-size: 14px; line-height: 1; }
   #main { flex: 1; display: flex; min-height: 0; }
   #map { flex: 1; min-width: 0; }
   #panel {
@@ -95,9 +103,11 @@
     <h1>Snodgrass Recreation Emphasis Area — Stakeholder Map</h1>
     <span class="sub">Draft working map for partner coordination · assembled by MetRec · not an official survey product</span>
     <!-- Absolute so the links still resolve from the emailable offline copy. -->
-    <span class="dl">Download:
-      <a href="https://derricknehrenberg.github.io/snodgrass-map/downloads/snodgrass_google_earth.kmz">Google Earth (KMZ)</a> ·
-      <a href="https://derricknehrenberg.github.io/snodgrass-map/downloads/snodgrass_clipped.gpkg">GIS (GeoPackage)</a>
+    <span class="dl">
+      <a href="https://derricknehrenberg.github.io/snodgrass-map/downloads/snodgrass_google_earth.kmz"
+         title="Download the Google Earth version of this map"><span class="arrow">↓</span>Google Earth (KMZ)</a>
+      <a href="https://derricknehrenberg.github.io/snodgrass-map/downloads/snodgrass_clipped.gpkg"
+         title="Download all layers as a GeoPackage for QGIS or ArcGIS Pro"><span class="arrow">↓</span>GIS (GeoPackage)</a>
     </span>
   </header>
   <div id="main">
