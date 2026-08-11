@@ -115,14 +115,6 @@
           "default": false
         },
         {
-          "name": "addresses",
-          "title": "Address Points",
-          "path": "data/gunnison_county/addresses.geojson",
-          "geometry": "Point",
-          "features": 1307,
-          "default": false
-        },
-        {
           "name": "driveways",
           "title": "Driveways",
           "path": "data/gunnison_county/driveways.geojson",

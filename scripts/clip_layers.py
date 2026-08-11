@@ -96,8 +96,9 @@ def build_catalog(raw, qfield):
         "subdivisions", "Subdivisions", ["Notes", "GISAcres", "PlatDate"])
     add(os.path.join(pel, "Sections.shp"), None, "gunnison_county",
         "plss_sections", "PLSS Sections")
-    add(os.path.join(pel, "Address.shp"), None, "gunnison_county",
-        "addresses", "Address Points")
+    # Address Points deliberately NOT published: the county layer carries full
+    # street addresses, ZIP, parcel/account numbers and a `Vacant` flag marking
+    # unoccupied homes. Removed 2026-08-11 at Derrick's request. Do not re-add.
     add(os.path.join(pel, "Driveway.shp"), None, "gunnison_county",
         "driveways", "Driveways")
     add(os.path.join(pel, "Exempt.shp"), None, "gunnison_county",
