@@ -209,6 +209,20 @@
           "default": true
         }
       ]
+    },
+    {
+      "key": "mtcb_water_san",
+      "title": "Mt. Crested Butte Water & Sanitation",
+      "layers": [
+        {
+          "name": "reservoirs_proposed",
+          "title": "Proposed Reservoirs",
+          "path": "data/mtcb_water_san/reservoirs_proposed.geojson",
+          "geometry": "Polygon",
+          "features": 2,
+          "default": true
+        }
+      ]
     }
   ],
   "generated_from": "clip_layers.py"

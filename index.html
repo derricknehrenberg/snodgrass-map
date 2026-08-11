@@ -164,6 +164,8 @@ const LAYER_STYLE = {
   "gunnison_county/addresses":     { kind:"point", color:"#666", radius:3 },
   "gunnison_county/milemarkers":   { kind:"point", color:"#1f6f43", radius:4 },
   "rmbl/research_areas":           { kind:"poly-cat", field:null, fixed:"#0e7c86", fillOp:.45 },
+  "mtcb_water_san/reservoirs_proposed": { kind:"poly-cat", field:null, fixed:"#1565c0", fillOp:.5 },
+  "mtcb_water_san/water_mains":    { kind:"line-cat", field:"System", weight:2 },
 };
 
 const FIELD_LABELS = {
@@ -182,11 +184,14 @@ const FIELD_LABELS = {
   Miles: "Miles", DOW_NAME: "Name (DOW)", NAME1: "Name", FEATURE: "Feature", GISAcres: "GIS acres",
   Owner: "Owner", Group: "Group", County: "County",
   MilePost: "Milepost", Roadname: "Road", Notes: "Notes", PlatDate: "Plat date",
+  Acres: "Acres", Facility_I: "Facility ID", Main_Type: "Main type",
+  Water_Type: "Water type", System: "System", Material: "Material",
+  Diameter_I: "Diameter (in)", Install_Da: "Installed", Comment: "Comment",
 };
 
 const TITLE_FIELDS = ["name","Name","NAME1","DOW_NAME","OWNERNAME","Final_DECISION_ManagementArea",
   "ROS_Summer_FinalDecision","ROS_Winter_FinalDecision","SIO_FinalDecision","TimberSuitability",
-  "Owner","MilePost","Label"];
+  "Owner","MilePost","Label","Facility_I"];
 
 // ---------- map ----------
 const map = L.map("map", { zoomSnap: .5 });
@@ -269,7 +274,8 @@ function makeLeafletLayer(key, gj, layerTitle) {
   };
 
   const opts = {
-    pane: cfg.kind === "line" ? panes.line : cfg.kind === "point" ? panes.point : panes.poly,
+    pane: (cfg.kind === "line" || cfg.kind === "line-cat") ? panes.line
+        : cfg.kind === "point" ? panes.point : panes.poly,
     style: f => {
       const c = colorFor(f.properties);
       if (cfg.kind === "poly-cat") return { color: "#5f5b54", weight: .7, fillColor: c, fillOpacity: cfg.fillOp ?? .4 };
@@ -305,6 +311,9 @@ function makeLeafletLayer(key, gj, layerTitle) {
     for (const [v, c] of entries) legend.push({ label: v, color: c, cls: "swatch" });
   } else if (cfg.kind === "poly-cat" && cfg.fixed) {
     legend.push({ label: "extent", color: cfg.fixed, cls: "swatch" });
+  } else if (cfg.kind === "line-cat" && cfg.field) {
+    catMap = catMap || buildCatColors(gj.features, cfg.field);
+    for (const [v, c] of catMap.entries()) legend.push({ label: v, color: c, cls: "swatch line" });
   } else if (cfg.kind === "line") {
     legend.push({ label: "", color: cfg.color, cls: "swatch line" });
   } else if (cfg.kind === "point") {

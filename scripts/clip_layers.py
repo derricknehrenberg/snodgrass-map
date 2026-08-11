@@ -48,10 +48,12 @@ def build_catalog(raw, qfield):
     pel = os.path.join(county_dir(raw), "Pelletier")
     C = []
 
-    def add(src, layer, group, name, title, fields=None, default=False, set_fields=None):
+    def add(src, layer, group, name, title, fields=None, default=False, set_fields=None,
+            crs=None, value_fixes=None, hold=False):
         C.append(dict(src=src, layer=layer, group=group, name=name,
                       title=title, fields=fields, default=default,
-                      set_fields=set_fields))
+                      set_fields=set_fields, crs=crs, value_fixes=value_fixes,
+                      hold=hold))
 
     # --- US Forest Service: GMUG Forest Plan 2024 (Final Decision) ---
     add(gdb, "GMUG_MAs_FinalDecision_20240613", "usfs_gmug",
@@ -124,14 +126,36 @@ def build_catalog(raw, qfield):
     add(os.path.join(raw, "RMBL", "RMBL_research_areas_2026.zip"), None, "rmbl",
         "research_areas", "Research Areas (2026)",
         fields=[], set_fields={"Name": "RMBL research area (2026)"}, default=True)
+
+    # --- Mt. Crested Butte Water & Sanitation District ---
+    # The proposed-reservoir shapefile arrived with no .prj. Its coordinates are
+    # UTM 13N meters and land on the North Village parcels, so we assign 26913 to
+    # match the GMUG data (NAD83 vs WGS84 differs ~1 m here — immaterial at this scale).
+    wsan = os.path.join(raw, "MtCBWaterSan")
+    add(os.path.join(wsan, "Reservoirs Proposed", "reservoirs_proposed.shp"), None,
+        "mtcb_water_san", "reservoirs_proposed", "Proposed Reservoirs",
+        ["Name", "Acres"], default=True, crs="EPSG:26913",
+        value_fixes={"Name": {"Proposed Cresent Lake Resevoir":
+                              "Proposed Crescent Lake Reservoir"}})
+    # HELD FROM PUBLICATION (Aug 2026): this is the full as-built Mt. CB distribution
+    # system (mains, hydrant laterals, service lines with material and diameter), not a
+    # proposed export alignment. The repo and Pages site are public, so per the project's
+    # non-public-partner-data rule it stays out of every output until Mt. CB Water & San
+    # confirms it may be posted publicly. Clear hold=True to publish.
+    add(os.path.join(wsan, "Water_Export", "Water_Main.shp"), None,
+        "mtcb_water_san", "water_mains", "Water Mains",
+        # Created_By / Last_Edite are staff usernames; GlobalID is internal — all dropped.
+        ["Facility_I", "Main_Type", "Water_Type", "System", "Material",
+         "Diameter_I", "Install_Da", "Comment"], hold=True)
     return C
 
 GROUP_TITLES = {
     "usfs_gmug": "US Forest Service — GMUG Forest Plan 2024",
     "gunnison_county": "Gunnison County",
     "rmbl": "Rocky Mountain Biological Laboratory",
+    "mtcb_water_san": "Mt. Crested Butte Water & Sanitation",
 }
-GROUP_ORDER = ("usfs_gmug", "gunnison_county", "rmbl")
+GROUP_ORDER = ("usfs_gmug", "gunnison_county", "rmbl", "mtcb_water_san")
 
 
 def main():
@@ -166,6 +190,14 @@ def main():
         out_dir = os.path.join(REPO, "data", item["group"])
         out_path = os.path.join(out_dir, item["name"] + ".geojson")
 
+        if item.get("hold"):
+            # Never publish, and scrub any copy an earlier run left behind — including
+            # from the GeoPackage, which is rebuilt from scratch each run.
+            if os.path.exists(out_path):
+                os.remove(out_path)
+            report.append((label, "HELD", "withheld from publication — see catalog note"))
+            continue
+
         cached = False
         try:
             gdf = (gpd.read_file(item["src"], layer=item["layer"])
@@ -181,6 +213,9 @@ def main():
                 continue
 
         if not cached:
+            if gdf.crs is None and item.get("crs"):
+                # Source shipped without a .prj; catalog declares the known CRS.
+                gdf = gdf.set_crs(item["crs"])
             if gdf.crs is None:
                 report.append((label, "SKIP", "no CRS defined"))
                 continue
@@ -203,6 +238,10 @@ def main():
                                         if c in gdf.columns])
             for k, v in (item.get("set_fields") or {}).items():
                 gdf[k] = v
+            # Display-only corrections to source values (e.g. misspelled labels).
+            for col, mapping in (item.get("value_fixes") or {}).items():
+                if col in gdf.columns:
+                    gdf[col] = gdf[col].replace(mapping)
             gdf.geometry = shapely.force_2d(gdf.geometry)
 
             # GeoJSON (WGS84, for the web map)
