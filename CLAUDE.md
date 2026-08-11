@@ -41,10 +41,15 @@ After a data rebuild: commit + push (Pages redeploys automatically), and copy
 1. Put raw data in `Raw GIS/<Stakeholder>/` on OneDrive.
 2. In `scripts/clip_layers.py`: add `add(...)` entries in `build_catalog()`
    (source path, group key, output name, title, curated field list, default
-   on/off) and the group key → display title in `GROUP_TITLES`.
+   on/off) and the group key → display title in `GROUP_TITLES` + `GROUP_ORDER`.
+   Optional `add(...)` args: `crs=` for sources shipped without a `.prj`,
+   `value_fixes={col: {old: new}}` for display-only label corrections, and
+   `hold=True` to keep a cataloged layer out of every output (it also deletes
+   any copy an earlier run wrote).
 3. In `index.html`: add a `LAYER_STYLE["<group>/<name>"]` entry (kinds:
-   `poly-cat`, `poly-outline`, `line`, `point`) and popup field labels in
-   `FIELD_LABELS`. Unstyled layers fall back to gray outline.
+   `poly-cat`, `poly-outline`, `line`, `line-cat`, `point`) and popup field
+   labels in `FIELD_LABELS`. Unstyled layers fall back to gray outline. Credit
+   the new source in the `Sources:` footer.
 4. Rerun both scripts. Layers with zero features inside the boundary are
    skipped automatically and reported in the run summary.
 
@@ -63,3 +68,6 @@ After a data rebuild: commit + push (Pages redeploys automatically), and copy
   even in the offline build (data layers work offline, basemap doesn't).
 - Keep the draft/not-a-survey-product disclaimer in the header and README.
 - All committed data must be public record — the repo and Pages site are public.
+- Mt. CB Water & San `Water_Main.shp` is held (`hold=True`): it is the full as-built
+  distribution system, not a proposed export alignment. Do not publish it until the
+  district confirms it may be posted publicly, or the map moves to private hosting.
