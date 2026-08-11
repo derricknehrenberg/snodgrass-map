@@ -28,7 +28,7 @@ DATA = os.path.join(REPO, "data")
 OUT = os.path.join(REPO, "downloads", "snodgrass_google_earth.kmz")
 
 DOC_NAME = "Snodgrass Recreation Emphasis Area — Stakeholder Map"
-DISCLAIMER = ("Draft working map for partner coordination · assembled by MetRec · "
+DISCLAIMER = ("Draft working map for partner coordination · "
               "not an official survey product. All layers clipped to the draft "
               "Snodgrass coordination boundary. Positions are approximate — verify "
               "with authoritative records before design or legal use.")
