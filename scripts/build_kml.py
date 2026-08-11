@@ -240,11 +240,47 @@ def style_block(sid, cfg, color):
     else:  # line, line-cat
         line_w = max(1.8, weight)
 
-    s = (f'<Style id="{sid}"><LineStyle><color>{kml_color(line_col)}</color>'
+    # StyleType child order is normative too: Icon, Label, Line, Poly, Balloon, List.
+    s = (f'<Style id="{sid}"><LabelStyle><scale>0</scale></LabelStyle>'
+         f'<LineStyle><color>{kml_color(line_col)}</color>'
          f'<width>{line_w:g}</width></LineStyle>')
     if poly:
         s += poly
-    return s + "<LabelStyle><scale>0</scale></LabelStyle></Style>"
+    return s + "</Style>"
+
+
+# KML 2.2 AbstractFeatureType child sequence. Order is normative: Google Earth
+# quietly ignores elements that appear out of sequence (an <open> before
+# <visibility> cost us the per-layer on/off state once already), so assert it.
+FEATURE_ORDER = ["name", "visibility", "open", "atom:author", "atom:link", "address",
+                 "xal:AddressDetails", "phoneNumber", "Snippet", "description",
+                 "LookAt", "Camera", "TimeStamp", "TimeSpan", "styleUrl", "Style",
+                 "StyleMap", "Region", "Metadata", "ExtendedData"]
+KML_NS = "{http://www.opengis.net/kml/2.2}"
+
+
+def assert_feature_order(kml_text):
+    """Raise if any Document/Folder/Placemark lists its header elements out of order."""
+    from xml.etree import ElementTree as ET
+    root = ET.fromstring(kml_text)
+    rank = {n: i for i, n in enumerate(FEATURE_ORDER)}
+    checked = 0
+    for feat in root.iter():
+        tag = feat.tag.replace(KML_NS, "")
+        if tag not in ("Document", "Folder", "Placemark"):
+            continue
+        checked += 1
+        seen = -1
+        for child in feat:
+            ctag = child.tag.replace(KML_NS, "")
+            if ctag not in rank:
+                continue  # geometry / nested features: they follow the header block
+            if rank[ctag] < seen:
+                raise AssertionError(
+                    f"<{tag} name={feat.findtext(KML_NS + 'name')!r}>: "
+                    f"<{ctag}> is out of KML sequence order")
+            seen = rank[ctag]
+    return checked
 
 
 def main():
@@ -255,10 +291,11 @@ def main():
     bnd = json.load(open(os.path.join(DATA, "boundary", "snodgrass_boundary.geojson")))
     styles.append('<Style id="boundary"><LineStyle><color>ff3d4fd9</color><width>3</width></LineStyle>'
                   '<PolyStyle><fill>0</fill><outline>1</outline></PolyStyle></Style>')
-    marks = "".join(f"<Placemark><styleUrl>#boundary</styleUrl>{geom_kml(f['geometry'])}</Placemark>"
+    marks = "".join("<Placemark><name>Coordination boundary</name><visibility>1</visibility>"
+                    f"<styleUrl>#boundary</styleUrl>{geom_kml(f['geometry'])}</Placemark>"
                     for f in bnd["features"])
-    folders.append("<Folder><name>Snodgrass coordination boundary</name><open>0</open>"
-                   f"<visibility>1</visibility>{marks}</Folder>")
+    folders.append("<Folder><name>Snodgrass coordination boundary</name>"
+                   f"<visibility>1</visibility><open>0</open>{marks}</Folder>")
 
     west, south, east, north = 180.0, 90.0, -180.0, -90.0
     for f in bnd["features"]:
@@ -286,6 +323,7 @@ def main():
                 catmap = cat_colors(feats, cfg["field"])
 
             # One shared Style per distinct colour keeps the KMZ small.
+            vis = 1 if lyr.get("default") else 0
             sids, marks, dropped = {}, [], 0
             for f in feats:
                 props = f.get("properties") or {}
@@ -303,32 +341,38 @@ def main():
                     if props.get(tf) not in (None, ""):
                         name = escape(str(props[tf]))
                         break
+                # KML feature element order is significant: name, visibility, open,
+                # Snippet, description, styleUrl, then the geometry. Google Earth
+                # silently ignores out-of-sequence elements — which is what made an
+                # earlier build show every layer switched on.
                 marks.append(f"<Placemark><name>{name}</name>"
-                             f"<styleUrl>#{sids[col]}</styleUrl>"
+                             f"<visibility>{vis}</visibility>"
                              f"<description><![CDATA[{describe(lyr['title'], props)}]]></description>"
+                             f"<styleUrl>#{sids[col]}</styleUrl>"
                              f"{gk}</Placemark>")
 
-            vis = 1 if lyr.get("default") else 0
-            sub.append(f"<Folder><name>{escape(lyr['title'])}</name><open>0</open>"
-                       f"<visibility>{vis}</visibility>"
-                       f"<snippet>{len(marks)} features</snippet>{''.join(marks)}</Folder>")
+            sub.append(f"<Folder><name>{escape(lyr['title'])}</name>"
+                       f"<visibility>{vis}</visibility><open>0</open>"
+                       f"<Snippet>{len(marks)} features</Snippet>{''.join(marks)}</Folder>")
             report.append((key, f"{len(marks)} feats" + (f" (-{dropped})" if dropped else ""),
                            "on" if vis else "off"))
 
         if sub:
-            folders.append(f"<Folder><name>{escape(grp['title'])}</name><open>1</open>"
-                           f"<visibility>1</visibility>{''.join(sub)}</Folder>")
+            folders.append(f"<Folder><name>{escape(grp['title'])}</name>"
+                           f"<visibility>1</visibility><open>1</open>{''.join(sub)}</Folder>")
 
     doc = ('<?xml version="1.0" encoding="UTF-8"?>\n'
            '<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n'
            f"<name>{escape(DOC_NAME)}</name>\n"
+           "<visibility>1</visibility>\n<open>1</open>\n"
            f"<description><![CDATA[<div style=\"{BALLOON_CSS}\">{escape(DISCLAIMER)}</div>]]></description>\n"
-           "<open>1</open>\n"
            f"<LookAt><longitude>{(west + east) / 2:.6f}</longitude><latitude>{(south + north) / 2:.6f}</latitude>"
            "<altitude>0</altitude><heading>0</heading><tilt>0</tilt><range>14000</range>"
            "<altitudeMode>clampToGround</altitudeMode></LookAt>\n"
            + "\n".join(styles) + "\n" + "\n".join(folders) +
            "\n</Document>\n</kml>\n")
+
+    checked = assert_feature_order(doc)
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
@@ -341,7 +385,10 @@ def main():
         print(f"{r[0]:<45} {r[1]:<12} {r[2]}")
     if fallbacks:
         print("\nNo LAYER_STYLE entry (drew gray): " + ", ".join(fallbacks))
-    print(f"\nwrote {OUT} ({os.path.getsize(OUT) / 1e6:.1f} MB, "
+    on = [r[0] for r in report if r[2] == "on"]
+    print(f"\nvisible on open ({len(on)}): " + ", ".join(on))
+    print(f"KML element order verified on {checked} features")
+    print(f"wrote {OUT} ({os.path.getsize(OUT) / 1e6:.1f} MB, "
           f"{sum(1 for _ in styles)} styles, doc.kml {len(doc) / 1e6:.1f} MB)")
 
 
