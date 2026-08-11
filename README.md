@@ -24,10 +24,19 @@ downloads/
   snodgrass_clipped.gpkg         all clipped layers in one GeoPackage (EPSG:26913)
                                  — open directly in QGIS or ArcGIS Pro
   snodgrass_map_offline.html     single-file copy of the map with data embedded
+  snodgrass_google_earth.kmz     open in Google Earth — same folders, colors and
+                                 default on/off layers as the web map
 scripts/
   clip_layers.py                 rebuilds data/ + the GeoPackage from raw sources
   build_offline.py               rebuilds the offline HTML from data/
+  build_kml.py                   rebuilds the Google Earth KMZ from data/
 ```
+
+**Opening the KMZ in Google Earth:** download it from the link in the map header,
+then in Google Earth Pro use *File → Open* (or drag the file onto the globe); in
+Google Earth Web use *Projects → Open → Import KML file*. Layers appear as folders
+you can tick on and off, and clicking a feature shows the same details as the web
+map. Dashed web-map lines draw solid — KML has no dashed-line support.
 
 ## Stakeholder groups
 
