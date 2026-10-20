@@ -213,6 +213,68 @@
           "geometry": "Polygon",
           "features": 2,
           "default": true
+        },
+        {
+          "name": "source_water",
+          "title": "Source Water Area (general)",
+          "path": "data/mtcb_water_san/source_water.geojson",
+          "geometry": "Polygon",
+          "features": 3,
+          "default": true
+        },
+        {
+          "name": "source_water_infrastructure",
+          "title": "Source Water Infrastructure",
+          "path": "data/mtcb_water_san/source_water_infrastructure.geojson",
+          "geometry": "LineString",
+          "features": 10,
+          "default": true
+        }
+      ]
+    },
+    {
+      "key": "otak_feasibility",
+      "title": "Otak \u2014 Snodgrass to Gothic Trail Feasibility (draft, Oct 2026)",
+      "layers": [
+        {
+          "name": "alignments",
+          "title": "Trail Alignment Alternatives",
+          "path": "data/otak_feasibility/alignments.geojson",
+          "geometry": "LineString",
+          "features": 21,
+          "default": true
+        },
+        {
+          "name": "grading_limits",
+          "title": "ALT 2 Grading Limits",
+          "path": "data/otak_feasibility/grading_limits.geojson",
+          "geometry": "LineString",
+          "features": 2,
+          "default": false
+        },
+        {
+          "name": "east_river",
+          "title": "East River",
+          "path": "data/otak_feasibility/east_river.geojson",
+          "geometry": "Polygon",
+          "features": 1,
+          "default": false
+        },
+        {
+          "name": "wetlands",
+          "title": "Wetlands (delineated)",
+          "path": "data/otak_feasibility/wetlands.geojson",
+          "geometry": "LineString",
+          "features": 215,
+          "default": false
+        },
+        {
+          "name": "notes",
+          "title": "Field Notes",
+          "path": "data/otak_feasibility/notes.geojson",
+          "geometry": "Point",
+          "features": 4,
+          "default": true
         }
       ]
     }

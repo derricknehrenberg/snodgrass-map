@@ -19,6 +19,10 @@ data/
   boundary/                      the Snodgrass coordination boundary
   usfs_gmug/                     USFS — GMUG Forest Plan 2024 Final Decision layers
   gunnison_county/               Gunnison County GIS layers
+  rmbl/                          RMBL research areas
+  mtcb_water_san/                Mt. CB Water & Sanitation — proposed reservoirs,
+                                 source water area + infrastructure
+  otak_feasibility/              Otak — Snodgrass to Gothic trail feasibility (draft)
   layers_index.json              manifest of groups/layers the map reads
 downloads/
   snodgrass_clipped.gpkg         all clipped layers in one GeoPackage (EPSG:26913)
@@ -48,9 +52,10 @@ One folder (and one map group) per stakeholder. Current and planned:
 | Gunnison County | ✅ loaded | County GIS shapefiles + QField GeoPackages |
 | Town of Mt. Crested Butte | ⏳ requested | — |
 | Town of Crested Butte | ⏳ requested | — |
-| RMBL | ⏳ requested | — |
+| RMBL | ✅ loaded | Research areas (2026) |
 | The Village at Mt. Crested Butte / NVA | ⏳ requested | — |
-| Mt. CB Water & Sanitation District | ⏳ requested | — |
+| Mt. CB Water & Sanitation District | ✅ loaded | Proposed reservoirs (conceptual); source water area + infrastructure (general location, 2026-10) |
+| Otak — Snodgrass to Gothic Trail Feasibility | ✅ loaded (draft) | Feasibility KMZ (2026-10-19): alignment alternatives, ALT 2 grading limits, East River, delineated wetlands, field notes |
 | MetRec | ⏳ planned | rec path priorities, survey-informed corridors |
 
 ## Contributing data (for partners)

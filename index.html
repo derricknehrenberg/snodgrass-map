@@ -123,7 +123,9 @@
       <div id="note">
         <b>Sources:</b> GMUG Forest Plan Final Decision GIS (USFS, 2024-06-13); Gunnison County GIS;
         RMBL research areas (2026); Mt. Crested Butte Water &amp; Sanitation District
-        proposed reservoirs (2026, conceptual — not a designed or permitted footprint).
+        proposed reservoirs (2026, conceptual — not a designed or permitted footprint) and
+        source water area / infrastructure (general location, 2026-10);
+        Otak, Snodgrass to Gothic Trail Feasibility KMZ (draft, 2026-10-19).
         All layers clipped to the draft Snodgrass coordination boundary (red dash).
         Positions are approximate — verify with authoritative records before design or legal use.
       </div>
@@ -183,7 +185,14 @@ const LAYER_STYLE = {
   "gunnison_county/milemarkers":   { kind:"point", color:"#1f6f43", radius:4 },
   "rmbl/research_areas":           { kind:"poly-cat", field:null, fixed:"#0e7c86", fillOp:.45 },
   "mtcb_water_san/reservoirs_proposed": { kind:"poly-cat", field:null, fixed:"#1565c0", fillOp:.5 },
+  "mtcb_water_san/source_water":   { kind:"poly-cat", field:null, fixed:"#0288d1", fillOp:.25 },
+  "mtcb_water_san/source_water_infrastructure": { kind:"line", color:"#01579b", weight:3 },
   "mtcb_water_san/water_mains":    { kind:"line-cat", field:"System", weight:2 },
+  "otak_feasibility/alignments":   { kind:"line-cat", field:"Alternative", weight:4 },
+  "otak_feasibility/grading_limits": { kind:"line", color:"#8d6e63", weight:2 },
+  "otak_feasibility/east_river":   { kind:"poly-cat", field:null, fixed:"#1976d2", fillOp:.35 },
+  "otak_feasibility/wetlands":     { kind:"line", color:"#26a69a", weight:1.5 },
+  "otak_feasibility/notes":        { kind:"point", color:"#d84315", radius:5 },
 };
 
 const FIELD_LABELS = {
@@ -205,6 +214,7 @@ const FIELD_LABELS = {
   Acres: "Acres", Facility_I: "Facility ID", Main_Type: "Main type",
   Water_Type: "Water type", System: "System", Material: "Material",
   Diameter_I: "Diameter (in)", Install_Da: "Installed", Comment: "Comment",
+  Alternative: "Alternative", Segment: "Segment",
 };
 
 const TITLE_FIELDS = ["name","Name","NAME1","DOW_NAME","OWNERNAME","Final_DECISION_ManagementArea",

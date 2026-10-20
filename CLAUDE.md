@@ -55,6 +55,9 @@ After a data rebuild: commit + push (Pages redeploys automatically), and copy
    `value_fixes={col: {old: new}}` for display-only label corrections, and
    `hold=True` to keep a cataloged layer out of every output (it also deletes
    any copy an earlier run wrote).
+   `loader=<zero-arg callable returning a GeoDataFrame>` replaces the file read
+   (clip, `fields=`, `set_fields`, `value_fixes` and outputs still apply) — used
+   for KMZ sources via `read_kmz()`, see below.
 3. In `index.html`: add a `LAYER_STYLE["<group>/<name>"]` entry (kinds:
    `poly-cat`, `poly-outline`, `line`, `line-cat`, `point`) and popup field
    labels in `FIELD_LABELS`. Unstyled layers fall back to gray outline. Credit
@@ -80,3 +83,17 @@ After a data rebuild: commit + push (Pages redeploys automatically), and copy
 - Mt. CB Water & San `Water_Main.shp` is held (`hold=True`): it is the full as-built
   distribution system, not a proposed export alignment. Do not publish it until the
   district confirms it may be posted publicly, or the map moves to private hosting.
+- KML/KMZ sources: `read_kmz(path, skip_folders)` in `clip_layers.py` is a
+  driver-independent parser (zipfile + ElementTree) that returns every Placemark
+  with `Name`, `Folder` (immediate parent) and `Group` (top-level folder under the
+  document's single root folder). Catalog entries select subsets with `loader=`.
+  Attributes come from the folder tree since KMZ placemark names are often
+  auto-generated ("kml_20").
+- Otak "Snodgrass to Gothic" feasibility KMZ (`otak_feasibility` group, draft
+  2026-10-19): alignments (ALT 1/2/3, ALT 2 TS-2..TS-5 segments), ALT 2 grading
+  limits, East River, wetlands, notes. Its `Gunnison_Co_Parcels_20260728` folder
+  is deliberately skipped (never parsed): it carries owner mailing / sale /
+  valuation fields, and curated county parcels already exist. Do not re-add.
+- Mt. CB Water & San `reservoirs_proposed.shp` has no `.prj`; its coordinates are
+  UTM 13N (checked 2026-10-20 despite the district's system being Web Mercator),
+  so the catalog assigns EPSG:26913. The source-water layers ship with a 3857 `.prj`.

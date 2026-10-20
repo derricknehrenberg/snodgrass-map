@@ -1,0 +1,12 @@
+{
+"type": "FeatureCollection",
+"name": "notes",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"xy_coordinate_resolution": 1e-06,
+"features": [
+{ "type": "Feature", "properties": { "Name": "Start Point" }, "geometry": { "type": "Point", "coordinates": [ -106.960386, 38.919404 ] } },
+{ "type": "Feature", "properties": { "Name": "End Point?" }, "geometry": { "type": "Point", "coordinates": [ -106.988599, 38.9577 ] } },
+{ "type": "Feature", "properties": { "Name": "GOTHIC" }, "geometry": { "type": "Point", "coordinates": [ -106.989133, 38.958176 ] } },
+{ "type": "Feature", "properties": { "Name": "Judd Falls" }, "geometry": { "type": "Point", "coordinates": [ -106.993987, 38.966318 ] } }
+]
+}
