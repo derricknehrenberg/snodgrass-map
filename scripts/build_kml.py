@@ -76,12 +76,16 @@ def parse_index_html(path):
                 cfg[k] = v  # bare identifier, e.g. the maColor function
         styles[key] = cfg
 
+    overrides = {}
+    for key, body in re.findall(r'"([^"]+)"\s*:\s*\{(.*?)\}', _js(src, "CAT_COLORS", "{"), re.S):
+        overrides[key] = dict(re.findall(r'"([^"]+)"\s*:\s*"(#[0-9a-fA-F]{6})"', body))
+
     labels = dict(re.findall(r'(\w+)\s*:\s*"([^"]*)"', _js(src, "FIELD_LABELS", "{")))
     titles = re.findall(r'"([^"]+)"', _js(src, "TITLE_FIELDS", "["))
-    return palette, ma, styles, labels, titles
+    return palette, ma, styles, labels, titles, overrides
 
 
-PALETTE, MA_COLORS, LAYER_STYLE, FIELD_LABELS, TITLE_FIELDS = parse_index_html(INDEX)
+PALETTE, MA_COLORS, LAYER_STYLE, FIELD_LABELS, TITLE_FIELDS, CAT_COLORS = parse_index_html(INDEX)
 
 
 def ma_color(v):
@@ -92,12 +96,14 @@ def ma_color(v):
     return "#9aa0a6"
 
 
-def cat_colors(features, field):
-    """Mirror buildCatColors(): sorted unique values cycle through CAT_PALETTE."""
+def cat_colors(features, field, key=None):
+    """Mirror buildCatColors(): sorted unique values cycle through CAT_PALETTE,
+    except values pinned in CAT_COLORS[key]."""
+    over = CAT_COLORS.get(key, {})
     vals = sorted({str(f.get("properties", {}).get(field, "—")
                        if f.get("properties", {}).get(field) is not None else "—")
                    for f in features})
-    return {v: PALETTE[i % len(PALETTE)] for i, v in enumerate(vals)}
+    return {v: over.get(v, PALETTE[i % len(PALETTE)]) for i, v in enumerate(vals)}
 
 
 def color_for(cfg, props, catmap):
@@ -320,7 +326,7 @@ def main():
 
             catmap = None
             if cfg.get("field") and cfg.get("color") != "maColor" and not cfg.get("fixed"):
-                catmap = cat_colors(feats, cfg["field"])
+                catmap = cat_colors(feats, cfg["field"], key)
 
             # One shared Style per distinct colour keeps the KMZ small.
             vis = 1 if lyr.get("default") else 0

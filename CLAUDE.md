@@ -59,7 +59,8 @@ After a data rebuild: commit + push (Pages redeploys automatically), and copy
    (clip, `fields=`, `set_fields`, `value_fixes` and outputs still apply) — used
    for KMZ sources via `read_kmz()`, see below.
 3. In `index.html`: add a `LAYER_STYLE["<group>/<name>"]` entry (kinds:
-   `poly-cat`, `poly-outline`, `line`, `line-cat`, `point`) and popup field
+   `poly-cat`, `poly-outline`, `line`, `line-cat`, `point`; to pin a specific
+   category value to a color, add it to `CAT_COLORS["<group>/<name>"]`) and popup field
    labels in `FIELD_LABELS`. Unstyled layers fall back to gray outline. Credit
    the new source in the `Sources:` footer.
 4. Rerun both scripts. Layers with zero features inside the boundary are

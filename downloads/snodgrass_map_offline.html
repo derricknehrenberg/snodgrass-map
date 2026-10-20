@@ -141,6 +141,11 @@
 // ---------- palettes ----------
 const CAT_PALETTE = ["#4477aa","#ee6677","#228833","#ccbb44","#66ccee","#aa3377",
                      "#bbbbbb","#997700","#6699cc","#994455","#225555","#e07b39"];
+// Per-layer overrides for categorical colors: "<group>/<layer>": { "<value>": "#hex" }.
+// Any value not listed here still takes its color from CAT_PALETTE in sorted order.
+const CAT_COLORS = {
+  "otak_feasibility/alignments": { "ALT 2": "#ffd600" },
+};
 
 // Management Area colors keyed by code prefix (matches FS map conventions loosely)
 const MA_COLORS = [
@@ -270,10 +275,11 @@ function hideInfo() {
 }
 
 // categorical color assignment (stable order: sorted unique values)
-function buildCatColors(features, field) {
+function buildCatColors(features, field, key) {
   const vals = [...new Set(features.map(f => String(f.properties?.[field] ?? "—")))].sort();
+  const over = CAT_COLORS[key] || {};
   const m = new Map();
-  vals.forEach((v, i) => m.set(v, CAT_PALETTE[i % CAT_PALETTE.length]));
+  vals.forEach((v, i) => m.set(v, over[v] || CAT_PALETTE[i % CAT_PALETTE.length]));
   return m;
 }
 
@@ -296,7 +302,7 @@ function makeLeafletLayer(key, gj, layerTitle) {
     if (cfg.fixed) return cfg.fixed;
     if (typeof cfg.color === "function") return cfg.color(props?.[cfg.field]);
     if (cfg.field) {
-      catMap = catMap || buildCatColors(gj.features, cfg.field);
+      catMap = catMap || buildCatColors(gj.features, cfg.field, key);
       return catMap.get(String(props?.[cfg.field] ?? "—"));
     }
     return cfg.color || "#888";
@@ -333,7 +339,7 @@ function makeLeafletLayer(key, gj, layerTitle) {
 
   // legend entries
   if (cfg.kind === "poly-cat" && cfg.field) {
-    catMap = catMap || buildCatColors(gj.features, cfg.field);
+    catMap = catMap || buildCatColors(gj.features, cfg.field, key);
     const entries = typeof cfg.color === "function"
       ? [...new Set(gj.features.map(f => String(f.properties?.[cfg.field] ?? "—")))].sort().map(v => [v, cfg.color(v)])
       : [...catMap.entries()];
@@ -341,7 +347,7 @@ function makeLeafletLayer(key, gj, layerTitle) {
   } else if (cfg.kind === "poly-cat" && cfg.fixed) {
     legend.push({ label: "extent", color: cfg.fixed, cls: "swatch" });
   } else if (cfg.kind === "line-cat" && cfg.field) {
-    catMap = catMap || buildCatColors(gj.features, cfg.field);
+    catMap = catMap || buildCatColors(gj.features, cfg.field, key);
     for (const [v, c] of catMap.entries()) legend.push({ label: v, color: c, cls: "swatch line" });
   } else if (cfg.kind === "line") {
     legend.push({ label: "", color: cfg.color, cls: "swatch line" });
